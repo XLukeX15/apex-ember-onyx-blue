@@ -14,6 +14,12 @@ h1{font-size:15px;margin:0 0 4px}
 .tabs{display:flex;gap:6px;margin:0 0 8px}
 .tabs button{flex:1;border:1px solid #334155;background:#0b1220;color:#e2e8f0;border-radius:8px;padding:6px 8px;cursor:pointer}
 .tabs button.on{background:#1d4ed8}
+.bulk{display:flex;gap:6px;margin:0 0 8px}
+.bulk button{flex:1;border:1px solid #334155;background:#0b1220;color:#e2e8f0;border-radius:8px;padding:6px 8px;cursor:pointer;font-size:12px}
+.bulk button:hover{background:#1e293b}
+.allbtns{display:flex;gap:6px;margin:0 0 8px}
+.allbtns button{flex:1;border:1px solid #334155;background:#0b1220;color:#e2e8f0;border-radius:8px;padding:6px 8px;cursor:pointer}
+.allbtns button:hover{background:#1e293b}
 .row{display:flex;align-items:center;gap:8px;font-size:12px;padding:2px 0;cursor:pointer}
 .dot{width:10px;height:10px;border-radius:50%;border:2px solid #fff}
 .leaflet-popup-content{color:#0f172a;min-width:200px}
@@ -28,6 +34,7 @@ a{color:#2563eb}
 <h1>El Paso West Side 79912</h1>
 <div class="tabs"><button id="tabWO" class="on">Work orders</button><button id="tabSS">Soft start</button></div>
 <p class="sub" id="subline">Tap a pin for name and phone</p>
+<div class="allbtns"><button type="button" id="btnAll">Select all</button><button type="button" id="btnNone">Deselect all</button></div>
 <div id="legend"></div>
 </aside>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -62,8 +69,23 @@ function addSoft(data){
  if(document.getElementById("tabSS").classList.contains("on"))showSS();
 }
 function clearAll(){Object.values(woLayers).forEach(l=>map.removeLayer(l));Object.values(ssLayers).forEach(l=>map.removeLayer(l));}
+function setAll(layers,on){
+ Object.keys(layers).forEach(k=>{
+  const layer=layers[k];
+  if(!layer || !layer.getLayers().length) return;
+  if(on) map.addLayer(layer); else map.removeLayer(layer);
+ });
+ document.querySelectorAll("#legend input[type=checkbox]").forEach(cb=>cb.checked=on);
+}
 function renderLegend(groups,layers){
  const legend=document.getElementById("legend");legend.innerHTML="";
+ const bulk=document.createElement("div");bulk.className="bulk";
+ const all=document.createElement("button");all.type="button";all.textContent="Select all";
+ const none=document.createElement("button");none.type="button";none.textContent="Deselect all";
+ all.onclick=()=>setAll(layers,true);
+ none.onclick=()=>setAll(layers,false);
+ bulk.appendChild(all);bulk.appendChild(none);
+ legend.appendChild(bulk);
  Object.entries(groups).forEach(([k,v])=>{
   const n=layers[k]?layers[k].getLayers().length:0;
   if(!n && groups!==WO_GROUPS) return;
@@ -75,10 +97,18 @@ function renderLegend(groups,layers){
 }
 function showWO(){clearAll();Object.values(woLayers).forEach(l=>map.addLayer(l));document.getElementById("tabWO").classList.add("on");document.getElementById("tabSS").classList.remove("on");document.getElementById("subline").textContent="Work orders - tap pin for name and phone";renderLegend(WO_GROUPS,woLayers);}
 function showSS(){clearAll();Object.values(ssLayers).forEach(l=>{if(l.getLayers().length)map.addLayer(l);});document.getElementById("tabSS").classList.add("on");document.getElementById("tabWO").classList.remove("on");document.getElementById("subline").textContent="Soft start - tap pin for name and phone";renderLegend(SS_GROUPS,ssLayers);}
-Promise.all(["soft1.json","soft2.json","soft3.json","soft4.json"].map(f=>fetch(f+"?v=11").then(r=>r.ok?r.json():[]).catch(()=>[])))
+Promise.all(["soft1.json","soft2.json","soft3.json","soft4.json"].map(f=>fetch(f+"?v=12").then(r=>r.ok?r.json():[]).catch(()=>[])))
  .then(parts=>addSoft([].concat.apply([],parts)))
  .catch(function(){});
+
+function setAll(on){
+ document.querySelectorAll("#legend input[type=checkbox]").forEach(cb=>{
+  if(cb.checked!==on){cb.checked=on;cb.dispatchEvent(new Event("change"));}
+ });
+}
 document.getElementById("tabWO").onclick=showWO;
 document.getElementById("tabSS").onclick=showSS;
+document.getElementById("btnAll").onclick=function(){setAll(true)};
+document.getElementById("btnNone").onclick=function(){setAll(false)};
 showWO();
 </script></body></html>
